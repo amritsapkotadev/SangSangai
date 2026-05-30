@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Trash2,
   X,
+  Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -62,7 +63,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function DashboardContent({ user }: { user: UserData }) {
+export function DashboardContent({ user, sangPointsBalance }: { user: UserData; sangPointsBalance?: string }) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -213,6 +214,22 @@ export function DashboardContent({ user }: { user: UserData }) {
                 <span>Unverified</span>
               )}
             </div>
+            {sangPointsBalance && (
+              <div className="mt-2 flex items-center gap-1.5 text-sm">
+                <Coins className="h-4 w-4 text-amber-500" />
+                <span className="font-semibold text-amber-600">
+                  {Number(sangPointsBalance).toLocaleString()}
+                </span>
+                <span className="text-muted-foreground">
+                  SangPoints
+                </span>
+                {Number(sangPointsBalance) > 0 && (
+                  <span className="ml-auto text-[10px] text-muted-foreground/50">
+                    on Polygon Amoy
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,9 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, Switch, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Coins } from 'lucide-react-native';
 import { useAuthStore } from '../../src/stores/authStore';
 import { API_BASE_URL } from '../../src/lib/env';
+import api from '../../src/lib/api';
 
 const GREEN = '#059669';
 
@@ -12,8 +14,20 @@ export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
+  const [sangPointsBalance, setSangPointsBalance] = useState<number>(0);
   const [pushNotifications, setPushNotifications] = React.useState(true);
   const [emailNotifications, setEmailNotifications] = React.useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/api/users/me/sangpoints');
+        if (res.data?.success && res.data?.data?.balance != null) {
+          setSangPointsBalance(Number(res.data.data.balance));
+        }
+      } catch { /* backend unreachable — show 0 */ }
+    })();
+  }, []);
 
   const getInitials = (name: string) =>
     name
@@ -170,9 +184,13 @@ export default function ProfileScreen() {
       }}>
         <StatCard value="0" label="Trips" />
         <View style={{ width: 1, height: 30, backgroundColor: '#F0F0F0', marginHorizontal: 16 }} />
-        <StatCard value="0" label="Countries" />
-        <View style={{ width: 1, height: 30, backgroundColor: '#F0F0F0', marginHorizontal: 16 }} />
-        <StatCard value="0" label="Photos" />
+        <View style={{ alignItems: 'center', flex: 1 }}>
+          <View className="flex-row items-center gap-1 mb-1">
+            <Coins color={GREEN} size={18} />
+            <Text style={{ fontSize: 22, fontWeight: '700', color: GREEN }}>{sangPointsBalance}</Text>
+          </View>
+          <Text style={{ fontSize: 12, color: '#8E8E93' }}>SangPoints</Text>
+        </View>
       </View>
 
       {/* Menu Sections */}
@@ -183,7 +201,6 @@ export default function ProfileScreen() {
         <MenuItem icon="calendar-outline" title="My Trips" subtitle="View all your bookings" onPress={() => {}} />
         <MenuItem icon="heart-outline" title="Saved Places" subtitle="Destinations saved" onPress={() => {}} />
         <MenuItem icon="star-outline" title="Reviews" subtitle="Reviews written" onPress={() => {}} />
-        <MenuItem icon="camera-outline" title="My Photos" subtitle="Memories shared" onPress={() => {}} showArrow={false} />
       </View>
 
       <View style={{ backgroundColor: '#FFFFFF', marginHorizontal: 20, marginBottom: 24, borderRadius: 16, overflow: 'hidden' }}>

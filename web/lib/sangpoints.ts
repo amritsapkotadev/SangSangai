@@ -1,51 +1,109 @@
 import { ethers } from "ethers";
+import SangPointsABI from "./SangPointsABI.json";
 
-const RPC_URL = process.env.BLOCKCHAIN_RPC_URL || "";
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "";
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
+const AMOY_RPC_URL =
+  process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology/";
 
-const ABI = [
-  "function balanceOf(address account) view returns (uint256)",
-  "function mint(address to, uint256 amount) returns (bool)",
-  "function transfer(address to, uint256 amount) returns (bool)",
-  "function totalSupply() view returns (uint256)",
-];
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
-let provider: ethers.JsonRpcProvider | null = null;
-let signer: ethers.Wallet | null = null;
-let contract: ethers.Contract | null = null;
+let _provider: ethers.JsonRpcProvider | null = null;
+let _signer: ethers.Wallet | null = null;
+let _contract: ethers.Contract | null = null;
 
-function getContract() {
-  if (!provider) {
-    provider = new ethers.JsonRpcProvider(RPC_URL);
+function getContract(): ethers.Contract {
+  if (_contract) return _contract;
+
+  if (!CONTRACT_ADDRESS) {
+    throw new Error(
+      "[sangpoints] CONTRACT_ADDRESS is not set. Add it to your .env.local file."
+    );
   }
-  if (!signer && PRIVATE_KEY) {
-    signer = new ethers.Wallet(PRIVATE_KEY, provider);
+  if (!PRIVATE_KEY) {
+    throw new Error(
+      "[sangpoints] PRIVATE_KEY is not set. Add it to your .env.local file."
+    );
   }
-  if (!contract && signer) {
-    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-  }
-  return contract;
+
+  _provider = new ethers.JsonRpcProvider(AMOY_RPC_URL);
+  _signer = new ethers.Wallet(PRIVATE_KEY, _provider);
+  _contract = new ethers.Contract(CONTRACT_ADDRESS, SangPointsABI, _signer);
+
+  return _contract;
 }
 
 export async function mintPoints(
   walletAddress: string,
   amount: number
 ): Promise<string> {
-  const c = getContract();
-  if (!c) throw new Error("Blockchain not configured");
+  if (!ethers.isAddress(walletAddress)) {
+    throw new Error(`[sangpoints] Invalid wallet address: ${walletAddress}`);
+  }
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error(
+      `[sangpoints] Amount must be a positive integer, got: ${amount}`
+    );
+  }
 
-  const tx = await c.mint(walletAddress, ethers.parseUnits(amount.toString(), 18));
-  const receipt = await tx.wait();
-  return receipt.hash;
+  const contract = getContract();
+
+  try {
+    const tx = await contract.mintPoints(walletAddress, BigInt(amount));
+    await tx.wait();
+    return tx.hash;
+  } catch (err: any) {
+    console.error("[sangpoints] mintPoints failed:", err?.message);
+    throw new Error(`Blockchain mint failed: ${err?.message}`);
+  }
 }
 
-export async function getBalance(
-  walletAddress: string
-): Promise<number> {
-  const c = getContract();
-  if (!c) return 0;
+export async function getBalance(walletAddress: string): Promise<string> {
+  if (!ethers.isAddress(walletAddress)) {
+    throw new Error(`[sangpoints] Invalid wallet address: ${walletAddress}`);
+  }
+  if (!CONTRACT_ADDRESS) {
+    throw new Error(
+      "[sangpoints] CONTRACT_ADDRESS is not set. Add it to your .env.local file."
+    );
+  }
 
-  const balance = await c.balanceOf(walletAddress);
-  return Number(ethers.formatUnits(balance, 18));
+  const provider = new ethers.JsonRpcProvider(AMOY_RPC_URL);
+  const contract = new ethers.Contract(
+    CONTRACT_ADDRESS,
+    SangPointsABI,
+    provider
+  );
+
+  try {
+    const balance = await contract.balanceOf(walletAddress);
+    return balance.toString();
+  } catch (err: any) {
+    console.error("[sangpoints] getBalance failed:", err?.message);
+    throw new Error(`Blockchain balance check failed: ${err?.message}`);
+  }
+}
+
+export async function redeemPoints(
+  walletAddress: string,
+  amount: number
+): Promise<string> {
+  if (!ethers.isAddress(walletAddress)) {
+    throw new Error(`[sangpoints] Invalid wallet address: ${walletAddress}`);
+  }
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new Error(
+      `[sangpoints] Amount must be a positive integer, got: ${amount}`
+    );
+  }
+
+  const contract = getContract();
+
+  try {
+    const tx = await contract.redeemPoints(walletAddress, BigInt(amount));
+    await tx.wait();
+    return tx.hash;
+  } catch (err: any) {
+    console.error("[sangpoints] redeemPoints failed:", err?.message);
+    throw new Error(`Blockchain redeem failed: ${err?.message}`);
+  }
 }

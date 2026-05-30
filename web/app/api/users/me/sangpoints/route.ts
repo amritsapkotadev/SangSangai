@@ -31,9 +31,10 @@ export async function GET(request: NextRequest) {
       data: { balance, walletAddress: user.walletAddress },
     });
   } catch (error) {
-    console.error("Get sangpoints error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Get sangpoints error:", message);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch balance" },
+      { success: false, error: `Failed to fetch balance: ${message}` },
       { status: 500 }
     );
   }
