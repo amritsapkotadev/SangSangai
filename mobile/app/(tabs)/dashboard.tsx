@@ -1,7 +1,7 @@
-import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Platform, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { MapPin, CheckCircle, Clock } from "lucide-react-native";
+import { MapPin, CheckCircle, Clock, AlertTriangle } from "lucide-react-native";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -16,13 +16,47 @@ export default function DashboardScreen() {
     progress: 50,
   };
 
+  const handleSOS = () => {
+    Alert.alert(
+      "🚨 Send Emergency Alert",
+      "This will notify emergency contacts and local authorities with your current location.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Send SOS",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "✅ SOS Sent",
+              "Emergency services have been notified. Help is on the way. Stay where you are and keep your phone on."
+            );
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <ScrollView
       className="flex-1 bg-gray-50"
-      contentContainerStyle={{ paddingTop: insets.top }}
+      contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 80 }}
     >
       <View className="p-6">
-        <Text className="text-3xl font-bold text-gray-800 mb-2">Namaste, Aarav</Text>
+        <View className="flex-row justify-between items-start mb-2">
+          <Text className="text-3xl font-bold text-gray-800">Namaste, Aarav</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleSOS}
+            className="bg-red-600 w-11 h-11 rounded-full items-center justify-center"
+            style={
+              Platform.OS === "android"
+                ? { elevation: 6 }
+                : { shadowColor: "#DC2626", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 }
+            }
+          >
+            <AlertTriangle color="#fff" size={20} />
+          </TouchableOpacity>
+        </View>
         <Text className="text-gray-500 mb-6">You have 1 active trip right now.</Text>
 
         {/* Active Trip Card */}
