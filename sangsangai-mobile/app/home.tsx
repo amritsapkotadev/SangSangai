@@ -1,78 +1,209 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  FlatList, 
+  Dimensions,
+  StatusBar,
+  Animated
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-type Item = { id: string; title: string; subtitle: string; image?: string };
+const { width, height } = Dimensions.get('window');
 
-const sampleData: Item[] = Array.from({ length: 18 }).map((_, i) => ({
-  id: `trip-${i + 1}`,
-  title: ['Mardi Himal', 'Annapurna Circuit', 'Langtang', 'Everest View'][i % 4] + ` • ${i + 1}d`,
-  subtitle: 'Guided trek with local experts',
-}));
+// Create Animated FlatList
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
-export default function HomeScreen() {
+const FEATURES = [
+  { 
+    id: '1', 
+    title: 'Connect with Local Experts',
+    desc: 'Find verified local guides who know every trail and can ensure your safety.',
+    icon: 'account-group',
+    color: '#6366f1'
+  },
+  { 
+    id: '2', 
+    title: 'Live Trek Tracking',
+    desc: 'Share your real-time location with family and friends for complete peace of mind.',
+    icon: 'map-marker-path',
+    color: '#f59e0b'
+  },
+  { 
+    id: '3', 
+    title: 'Secure Transactions',
+    desc: 'Pay with confidence using our escrow system that protects both trekkers and guides.',
+    icon: 'shield-lock',
+    color: '#10b981'
+  },
+];
+
+export default function WelcomeScreen() {
   const router = useRouter();
-  const [page, setPage] = useState(0);
-  const perPage = 6;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
-  const pages = useMemo(() => {
-    const chunks: Item[][] = [];
-    for (let i = 0; i < sampleData.length; i += perPage) chunks.push(sampleData.slice(i, i + perPage));
-    return chunks;
-  }, []);
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index);
+    }
+  }).current;
 
-  const data = pages[page] ?? [];
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 50,
+  };
+
+  const renderItem = ({ item, index }: any) => {
+    const inputRange = [
+      (index - 1) * width,
+      index * width,
+      (index + 1) * width,
+    ];
+    
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.9, 1, 0.9],
+      extrapolate: 'clamp',
+    });
+    
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.5, 1, 0.5],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={{ width, paddingHorizontal: 40, justifyContent: 'center' }}>
+        <Animated.View
+          style={{
+            transform: [{ scale }],
+            opacity,
+          }}
+        >
+          <View style={{ alignItems: 'center' }}>
+            <View style={{
+              width: 140,
+              height: 140,
+              borderRadius: 70,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 40,
+              backgroundColor: item.color,
+            }}>
+              <MaterialCommunityIcons name={item.icon as any} size={64} color="#ffffff" />
+            </View>
+            
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1f2937', textAlign: 'center', marginBottom: 12 }}>
+              {item.title}
+            </Text>
+            
+            <Text style={{ fontSize: 16, color: '#6b7280', textAlign: 'center', lineHeight: 24 }}>
+              {item.desc}
+            </Text>
+          </View>
+        </Animated.View>
+      </View>
+    );
+  };
 
   return (
-    <View className="flex-1 bg-gradient-to-b from-white to-gray-50">
-      <View className="p-6 pt-10 flex-1">
-        <View>
-          <Text className="text-3xl font-extrabold text-mountainBlue">Discover Treks</Text>
-          <Text className="text-gray-500 mt-1">Hand-picked routes & experienced guides</Text>
-        </View>
-
-        <FlatList
-          data={data}
-          keyExtractor={(i) => i.id}
-          numColumns={2}
-          columnWrapperStyle={{ justifyContent: 'space-between' }}
-          contentContainerStyle={{ paddingVertical: 16 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => router.push(`/trip/${item.id}`)}
-              className="bg-white rounded-2xl p-3 mb-4 w-[48%] shadow"
-            >
-              <View className="h-32 bg-gray-100 rounded-xl mb-3 items-center justify-center">
-                <Text className="text-3xl">🏔️</Text>
-              </View>
-              <Text className="font-bold text-gray-800">{item.title}</Text>
-              <Text className="text-sm text-gray-500 mt-1">{item.subtitle}</Text>
-            </TouchableOpacity>
-          )}
-        />
-
-        <View className="flex-row items-center justify-between mt-2">
-          <TouchableOpacity
-            onPress={() => setPage((p) => Math.max(0, p - 1))}
-            className={`px-4 py-2 rounded-xl ${page === 0 ? 'bg-gray-100' : 'bg-white'} shadow`}
-            disabled={page === 0}
-          >
-            <Text className={`text-sm ${page === 0 ? 'text-gray-400' : 'text-gray-700'}`}>Previous</Text>
-          </TouchableOpacity>
-
-          <View className="items-center">
-            <Text className="text-sm text-gray-600">Page {page + 1} of {pages.length}</Text>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
+      <View style={{ flex: 1, backgroundColor: '#0f172a' }}>
+        <View style={{ flex: 1 }}>
+          {/* Header */}
+          <View style={{ alignItems: 'center', paddingTop: 64, paddingBottom: 32 }}>
+            <View style={{
+              width: 96,
+              height: 96,
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              borderRadius: 16,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 16,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.2)',
+            }}>
+              <MaterialCommunityIcons name="compass" size={48} color="#ffffff" />
+            </View>
+             <Text style={{ color: '#a5b4fc', marginTop: 8 }}>Safe trekking, side by side</Text>
           </View>
 
-          <TouchableOpacity
-            onPress={() => setPage((p) => Math.min(pages.length - 1, p + 1))}
-            className={`px-4 py-2 rounded-xl ${page === pages.length - 1 ? 'bg-gray-100' : 'bg-nepalRed' } shadow`}
-            disabled={page === pages.length - 1}
-          >
-            <Text className={`text-sm ${page === pages.length - 1 ? 'text-gray-400' : 'text-white'}`}>Next</Text>
-          </TouchableOpacity>
+          {/* Carousel */}
+          <View style={{ flex: 1 }}>
+            <AnimatedFlatList
+              ref={flatListRef}
+              data={FEATURES}
+              keyExtractor={(item) => item.id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                { useNativeDriver: true } // Now this works with AnimatedFlatList
+              )}
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
+              renderItem={renderItem}
+            />
+          </View>
+
+          {/* Pagination */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 32 }}>
+            {FEATURES.map((_, index) => (
+              <View
+                key={index}
+                style={{
+                  height: 8,
+                  borderRadius: 4,
+                  marginHorizontal: 4,
+                  backgroundColor: currentIndex === index ? '#6366f1' : 'rgba(99, 102, 241, 0.3)',
+                  width: currentIndex === index ? 32 : 8,
+                }}
+              />
+            ))}
+          </View>
+
+          {/* Buttons */}
+          <View style={{ paddingHorizontal: 32, paddingBottom: 48 }}>
+            <TouchableOpacity
+              onPress={() => router.push('/login')}
+              style={{
+                backgroundColor: '#6366f1',
+                borderRadius: 16,
+                paddingVertical: 16,
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 18 }}>Get Started</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/signup')}
+              style={{
+                paddingVertical: 16,
+                borderRadius: 16,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(99, 102, 241, 0.3)',
+              }}
+            >
+              <Text style={{ color: '#c7d2fe', fontWeight: '600' }}>Create New Account</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/home')}
+              style={{ marginTop: 24, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#6b7280', fontSize: 14 }}>Already have an account? Sign In</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+    </>
   );
 }

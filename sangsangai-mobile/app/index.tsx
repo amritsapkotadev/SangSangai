@@ -1,71 +1,202 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  FlatList, 
+  Dimensions,
+  StatusBar,
+  Animated
+} from 'react-native';
 import { useRouter } from 'expo-router';
-// Pagination is shown as page indicator (Page X of Y)
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// Animated FlatList to support native-driven onScroll
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 const FEATURES = [
-  { id: 'f1', title: 'Find Local Guides', desc: 'Discover trusted, experienced guides in your area.' },
-  { id: 'f2', title: 'Track Treks', desc: 'Real-time trip status and location updates.' },
-  { id: 'f3', title: 'Secure Payments', desc: 'Safe and transparent payments between trekkers and guides.' },
+  { 
+    id: 'f1', 
+    title: 'Connect with Local Experts',
+    desc: 'Find verified local guides who know every trail and can ensure your safety.',
+    icon: 'account-group',
+    color: '#6366f1'
+  },
+  { 
+    id: 'f2', 
+    title: 'Live Trek Tracking',
+    desc: 'Share your real-time location with family and friends for complete peace of mind.',
+    icon: 'map-marker-path',
+    color: '#f59e0b'
+  },
+  { 
+    id: 'f3', 
+    title: 'Secure Transactions',
+    desc: 'Pay with confidence using our escrow system that protects both trekkers and guides.',
+    icon: 'shield-lock',
+    color: '#10b981'
+  },
 ];
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const ref = useRef<FlatList>(null);
-  const [page, setPage] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<any>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  const viewabilityConfig = {
+    itemVisiblePercentThreshold: 50,
+  };
+
+  const renderItem = ({ item, index }: any) => {
+    const inputRange = [
+      (index - 1) * width,
+      index * width,
+      (index + 1) * width,
+    ];
+    
+    const scale = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.9, 1, 0.9],
+      extrapolate: 'clamp',
+    });
+    
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.5, 1, 0.5],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={{ width, paddingHorizontal: 40, justifyContent: 'center' }}>
+        <Animated.View
+          style={{
+            transform: [{ scale }],
+            opacity,
+          }}
+        >
+          <View className="items-center">
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                borderRadius: 70,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 40,
+                backgroundColor: item.color,
+              }}
+            >
+              <MaterialCommunityIcons name={item.icon} size={64} color="#ffffff" />
+            </View>
+            
+            <Text className="text-2xl font-bold text-gray-900 text-center mb-3">
+              {item.title}
+            </Text>
+            
+            <Text className="text-base text-gray-600 text-center leading-6">
+              {item.desc}
+            </Text>
+          </View>
+        </Animated.View>
+      </View>
+    );
+  };
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="items-center justify-center p-8 pt-12">
-        <View className="w-28 h-28 bg-nepalRed rounded-2xl items-center justify-center shadow-md">
-          <Text className="text-5xl text-white">🏔️</Text>
-        </View>
-        <Text className="text-4xl font-extrabold text-mountainBlue mt-4">SangSangai</Text>
-        <Text className="text-gray-500 mt-2 text-center">Safe trekking, side by side.</Text>
-      </View>
-
-      <View style={{ height: 220 }}>
-        <FlatList
-          ref={ref}
-          data={FEATURES}
-          keyExtractor={(i) => i.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(ev) => {
-            const newIndex = Math.round(ev.nativeEvent.contentOffset.x / width);
-            setPage(newIndex);
-          }}
-          renderItem={({ item }) => (
-            <View style={{ width, padding: 24 }} className="items-center justify-center">
-              <View className="w-64 h-40 bg-gradient-to-r from-mountainBlue/10 to-nepalRed/10 rounded-3xl items-center justify-center shadow">
-                <Text className="text-2xl font-bold text-mountainBlue">{item.title}</Text>
-              </View>
-              <Text className="text-center text-gray-600 mt-4 px-6">{item.desc}</Text>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
+      <View style={{ flex: 1, backgroundColor: '#0f172a' }}>
+        <View style={{ flex: 1 }}>
+          {/* Header */}
+          <View className="items-center pt-16 pb-8">
+            <View className="w-24 h-24 bg-white/10 rounded-2xl items-center justify-center mb-4 backdrop-blur-lg border border-white/20">
+              <MaterialCommunityIcons name="compass" size={48} color="#ffffff" />
             </View>
-          )}
-        />
+            <Text className="text-3xl font-bold text-white">SangSangai</Text>
+            <Text className="text-indigo-200 mt-2">Safe trekking, side by side</Text>
+          </View>
+
+          {/* Carousel */}
+          <View style={{ flex: 1 }}>
+            <AnimatedFlatList
+              ref={flatListRef}
+              data={FEATURES}
+              keyExtractor={(item: any) => item.id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                { useNativeDriver: true }
+              )}
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
+              renderItem={renderItem}
+            />
+          </View>
+
+          {/* Pagination */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+            {FEATURES.map((_, index) => {
+              const active = currentIndex === index;
+              return (
+                <View
+                  key={index}
+                  style={{
+                    height: 8,
+                    width: active ? 32 : 8,
+                    borderRadius: 4,
+                    marginHorizontal: 4,
+                    backgroundColor: active ? '#6366f1' : 'rgba(99,102,241,0.28)'
+                  }}
+                />
+              );
+            })}
+          </View>
+
+          {/* Buttons */}
+          <View className="px-8 pb-12">
+            <TouchableOpacity
+              onPress={() => router.push('/login')}
+              style={{ marginBottom: 12 }}
+            >
+              <View
+                style={{
+                  backgroundColor: '#6366f1',
+                  borderRadius: 16,
+                  paddingVertical: 16,
+                  alignItems: 'center',
+                }}
+              >
+                <Text className="text-white font-bold text-lg">Get Started</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/signup')}
+              className="py-4 rounded-xl items-center border border-indigo-500/30"
+            >
+              <Text className="text-indigo-300 font-semibold">Create New Account</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/home')}
+              className="mt-6 items-center"
+            >
+              <Text className="text-gray-400 text-sm">Already have an account? Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-
-      <View className="items-center mt-4">
-        <Text className="text-sm text-gray-600">Page {page + 1} of {FEATURES.length}</Text>
-      </View>
-
-      <View className="px-6 mt-8">
-        <TouchableOpacity onPress={() => router.push('/login')} className="w-full bg-nepalRed py-4 rounded-xl items-center mb-3">
-          <Text className="text-white font-bold text-lg">Login</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.push('/signup')} className="w-full bg-white border border-gray-200 py-4 rounded-xl items-center mb-3">
-          <Text className="text-mountainBlue font-bold text-lg">Create account</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => router.replace('/home')} className="w-full items-center mt-2">
-          <Text className="text-gray-500">Continue as guest</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </>
   );
 }

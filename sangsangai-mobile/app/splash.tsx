@@ -10,7 +10,7 @@ export default function SplashScreen() {
     Animated.timing(opacity, { toValue: 1, duration: 900, useNativeDriver: true }).start();
 
     const t = setTimeout(() => {
-      router.replace('/home');
+      router.replace('/(tabs)/dashboard');
     }, 2000);
 
     return () => clearTimeout(t);
