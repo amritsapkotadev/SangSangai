@@ -24,7 +24,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "My Trip",
+          title: "My Tripe",
           tabBarIcon: ({ color }) => <Map color={color} size={24} />,
         }}
       />
