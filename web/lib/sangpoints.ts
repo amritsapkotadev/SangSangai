@@ -83,6 +83,39 @@ export async function getBalance(walletAddress: string): Promise<string> {
   }
 }
 
+export async function getTotalSupply(): Promise<string> {
+  if (!CONTRACT_ADDRESS) {
+    throw new Error("[sangpoints] CONTRACT_ADDRESS is not set.");
+  }
+
+  const provider = new ethers.JsonRpcProvider(AMOY_RPC_URL);
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, SangPointsABI, provider);
+
+  try {
+    const supply = await contract.totalSupply();
+    return supply.toString();
+  } catch (err: any) {
+    console.error("[sangpoints] getTotalSupply failed:", err?.message);
+    throw new Error(`Blockchain total supply check failed: ${err?.message}`);
+  }
+}
+
+export async function getContractOwner(): Promise<string> {
+  if (!CONTRACT_ADDRESS) {
+    throw new Error("[sangpoints] CONTRACT_ADDRESS is not set.");
+  }
+
+  const provider = new ethers.JsonRpcProvider(AMOY_RPC_URL);
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, SangPointsABI, provider);
+
+  try {
+    return await contract.owner();
+  } catch (err: any) {
+    console.error("[sangpoints] getContractOwner failed:", err?.message);
+    throw new Error(`Blockchain owner check failed: ${err?.message}`);
+  }
+}
+
 export async function redeemPoints(
   walletAddress: string,
   amount: number
