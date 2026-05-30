@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Switch, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Switch, Alert, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Coins } from 'lucide-react-native';
@@ -91,8 +92,9 @@ export default function ProfileScreen() {
   );
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F8F9FA' }} edges={['top']}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: '#F8F9FA' }}
+      style={{ flex: 1 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Cover Image & Profile Header */}
@@ -271,5 +273,6 @@ export default function ProfileScreen() {
 
       <Text style={{ textAlign: 'center', fontSize: 12, color: '#C7C7CC', marginBottom: 20 }}>Version 1.0.0</Text>
     </ScrollView>
+    </SafeAreaView>
   );
 }

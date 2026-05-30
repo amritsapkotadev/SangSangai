@@ -8,7 +8,9 @@ import {
   Image,
   Modal,
   FlatList,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Heart, Search, Filter, Calendar, MapPin, Users, Star, X, ArrowRight } from 'lucide-react-native';
 
 // Demo trek data from local people
@@ -145,7 +147,8 @@ export default function BrowseScreen() {
 
   const TrekCard = ({ trek }) => (
     <TouchableOpacity 
-      className="bg-white rounded-xl mb-4 overflow-hidden shadow-sm"
+      className="bg-white rounded-xl mb-4 overflow-hidden"
+      style={Platform.OS === "android" ? { elevation: 3 } : { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4 }}
       onPress={() => setSelectedTrek(trek)}
       activeOpacity={0.9}
     >
@@ -420,9 +423,9 @@ export default function BrowseScreen() {
   const activeFilterCount = [selectedDifficulty, selectedFrom, selectedTo].filter(f => f && f !== '').length;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top']}>
       {/* Header */}
-      <View className="bg-white px-4 pt-4 pb-2 shadow-sm">
+      <View className="bg-white px-4 pt-4 pb-2" style={Platform.OS === "android" ? { elevation: 2 } : { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3 }}>
         <Text className="text-2xl font-bold text-gray-800 mb-3">Explore Treks</Text>
         
         {/* Search Bar */}
@@ -511,6 +514,6 @@ export default function BrowseScreen() {
       {/* Modals */}
       <FilterModal />
       <TrekDetailModal />
-    </View>
+    </SafeAreaView>
   );
 }

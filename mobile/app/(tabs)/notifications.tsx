@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { 
   View, Text, FlatList, TouchableOpacity, Switch, 
-  StyleSheet, Alert, RefreshControl 
+  StyleSheet, Alert, RefreshControl, Platform 
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 const INITIAL_NOTIFS = [
@@ -162,7 +163,7 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -226,7 +227,7 @@ export default function NotificationsScreen() {
         ListEmptyComponent={EmptyState}
         contentContainerStyle={notifications.length === 0 && { flex: 1 }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -7,7 +7,6 @@ import {
   TextInput,
   FlatList,
   Modal,
-  SafeAreaView,
   StatusBar,
   Dimensions,
   Platform,
@@ -16,6 +15,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../src/lib/api';

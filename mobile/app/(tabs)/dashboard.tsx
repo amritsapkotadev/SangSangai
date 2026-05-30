@@ -1,9 +1,11 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MapPin, CheckCircle, Clock } from "lucide-react-native";
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const activeTrip = {
     id: "trip-123",
@@ -15,13 +17,19 @@ export default function DashboardScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView
+      className="flex-1 bg-gray-50"
+      contentContainerStyle={{ paddingTop: insets.top }}
+    >
       <View className="p-6">
-        <Text className="text-3xl font-bold text-mountainBlue mb-2">Namaste, Aarav</Text>
+        <Text className="text-3xl font-bold text-gray-800 mb-2">Namaste, Aarav</Text>
         <Text className="text-gray-500 mb-6">You have 1 active trip right now.</Text>
 
         {/* Active Trip Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+        <View
+          className="bg-white rounded-2xl p-5 mb-6 border border-gray-100"
+          style={Platform.OS === "android" ? { elevation: 3 } : { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 4 }}
+        >
           <View className="flex-row justify-between items-center mb-4">
             <View className="bg-green-100 px-3 py-1 rounded-full">
               <Text className="text-green-700 font-bold text-xs tracking-wider">ACTIVE</Text>
@@ -34,23 +42,25 @@ export default function DashboardScreen() {
 
           {/* Progress Bar */}
           <View className="w-full bg-gray-100 h-2 rounded-full mb-4">
-            <View className="bg-nepalRed h-2 rounded-full" style={{ width: `${activeTrip.progress}%` }} />
+            <View className="bg-red-500 h-2 rounded-full" style={{ width: `${activeTrip.progress}%` }} />
           </View>
 
           <View className="flex-row items-center mb-6 bg-blue-50 p-3 rounded-lg">
             <MapPin color="#1C3F60" size={20} />
-            <Text className="ml-2 text-mountainBlue font-medium">Next Waypoint: {activeTrip.nextWaypoint}</Text>
+            <Text className="ml-2 text-gray-700 font-medium">Next Waypoint: {activeTrip.nextWaypoint}</Text>
           </View>
 
-          <View className="flex-row space-x-3">
-            <TouchableOpacity 
-              className="flex-1 bg-mountainBlue py-3 rounded-xl items-center flex-row justify-center"
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              className="flex-1 bg-blue-700 py-3 rounded-xl items-center flex-row justify-center"
             >
               <CheckCircle color="#fff" size={18} />
               <Text className="text-white font-bold ml-2">Confirm Arrival</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
+              activeOpacity={0.7}
               onPress={() => router.push(`/trip/${activeTrip.id}`)}
               className="bg-gray-100 py-3 px-5 rounded-xl items-center"
             >
