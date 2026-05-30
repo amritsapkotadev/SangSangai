@@ -27,3 +27,10 @@ yarn-error.log*
 
 # zip archives
 *.zip
+
+# next.js build output
+.next/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
