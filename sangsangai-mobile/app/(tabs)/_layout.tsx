@@ -39,6 +39,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
+          headerShown: false,
           title: 'Explore',
           tabBarIcon: ({ focused }) => (
             <Text style={[styles.icon, { color: focused ? '#007AFF' : '#8E8E93' }]}>
@@ -51,6 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="browse"
         options={{
+          headerShown: true,
           title: 'Search',
           tabBarIcon: ({ focused }) => (
             <Text style={[styles.icon, { color: focused ? '#007AFF' : '#8E8E93' }]}>
@@ -61,9 +63,10 @@ export default function TabLayout() {
       />
       
       <Tabs.Screen
-        name="messages"
+        name="community"
         options={{
-          title: 'Messages',
+          headerShown: false,
+          title: 'Community',
           tabBarIcon: ({ focused }) => (
             <Text style={[styles.icon, { color: focused ? '#007AFF' : '#8E8E93' }]}>
               💬
@@ -75,6 +78,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
+          headerShown: true,
           title: 'Activity',
           tabBarIcon: ({ focused }) => (
             <Text style={[styles.icon, { color: focused ? '#007AFF' : '#8E8E93' }]}>
@@ -87,6 +91,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          headerShown: true,
           title: 'Profile',
           tabBarIcon: ({ focused }) => (
             <Text style={[styles.icon, { color: focused ? '#007AFF' : '#8E8E93' }]}>
