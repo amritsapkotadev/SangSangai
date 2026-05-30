@@ -1,11 +1,30 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Switch, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, Switch, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 
 export default function ProfileScreen() {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [sangPoints, setSangPoints] = useState<number | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPoints = async () => {
+      try {
+        const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api";
+        const res = await axios.get(`${API_URL}/users/me/sangpoints`);
+        if (res.data && res.data.success) {
+          setSangPoints(res.data.sangPoints);
+          setWalletAddress(res.data.walletAddress);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch SangPoints:", err);
+      }
+    };
+    fetchPoints();
+  }, []);
 
   const StatCard = ({ value, label }) => (
     <View style={{ alignItems: 'center', flex: 1 }}>
@@ -91,7 +110,7 @@ export default function ProfileScreen() {
 
       {/* User Info */}
       <View style={{ paddingHorizontal: 20, alignItems: 'center', marginBottom: 24 }}>
-        <Text style={{ fontSize: 24, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 }}>Alex Morgan</Text>
+        <Text style={{ fontSize: 24, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 }}>Aarav</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
           <Ionicons name="location-outline" size={14} color="#8E8E93" />
           <Text style={{ fontSize: 13, color: '#8E8E93', marginLeft: 4 }}>New York, USA</Text>
@@ -126,6 +145,37 @@ export default function ProfileScreen() {
         <StatCard value="8" label="Countries" />
         <View style={{ width: 1, height: 30, backgroundColor: '#F0F0F0', marginHorizontal: 16 }} />
         <StatCard value="156" label="Photos" />
+      </View>
+
+      {/* Blockchain Wallet Card */}
+      <View style={{
+        marginHorizontal: 20,
+        marginBottom: 24,
+        padding: 20,
+        backgroundColor: '#1C3F60',
+        borderRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 4,
+      }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Text style={{ color: '#E2E8F0', fontSize: 12, fontWeight: '700', letterSpacing: 1 }}>SANGPOINTS WALLET</Text>
+          <Text style={{ color: '#10B981', fontSize: 10, fontWeight: '700', backgroundColor: 'rgba(16,185,129,0.15)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>POLYGON AMOY</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 16 }}>
+          <Text style={{ color: '#FFFFFF', fontSize: 32, fontWeight: '800' }}>
+            {sangPoints !== null ? sangPoints : '0'}
+          </Text>
+          <Text style={{ color: '#FF385C', fontSize: 16, fontWeight: '700', marginLeft: 6 }}>SANG</Text>
+        </View>
+        <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 12 }}>
+          <Text style={{ color: '#9CA3AF', fontSize: 11, marginBottom: 4 }}>Wallet Address</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 12, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }} numberOfLines={1} ellipsizeMode="middle">
+            {walletAddress || "0xeC5eA63092348C7B473678F2F41875963527a895"}
+          </Text>
+        </View>
       </View>
 
       {/* Menu Sections */}

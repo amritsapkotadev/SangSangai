@@ -16,8 +16,8 @@ export async function POST(
     if (!process.env.DATABASE_URL) {
       console.warn("⚠️ [API] DATABASE_URL missing. Proceeding with mock trip completion.");
       
-      // Simulate blockchain minting for hackathon UI flow
-      const txHash = await mintPoints("0xDemoGuideWalletAddress12345", 200);
+      // Simulate blockchain minting for hackathon UI flow (using Aarav's demo wallet)
+      const txHash = await mintPoints("0xeC5eA63092348C7B473678F2F41875963527a895", 200);
       
       return NextResponse.json({
         success: true,

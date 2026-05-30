@@ -10,12 +10,12 @@ export async function GET(request: Request) {
     const mockUserId = "cm0_mock_guide_id_123";
 
     if (!process.env.DATABASE_URL) {
-      // Mock mode
-      const balance = await getBalance("0xDemoGuideWalletAddress12345");
+      // Mock mode (using Aarav's demo wallet)
+      const balance = await getBalance("0xeC5eA63092348C7B473678F2F41875963527a895");
       return NextResponse.json({
         success: true,
         sangPoints: balance,
-        walletAddress: "0xDemoGuideWalletAddress12345",
+        walletAddress: "0xeC5eA63092348C7B473678F2F41875963527a895",
       });
     }
 
