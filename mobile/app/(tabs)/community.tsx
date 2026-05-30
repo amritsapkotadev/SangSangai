@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -50,6 +51,245 @@ interface CommunityPost {
   isLiked: boolean;
   isSaved: boolean;
 }
+
+const styles = StyleSheet.create({
+  backdropStyle: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalContainer: {
+    flex: 1,
+    pointerEvents: 'box-none',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: SCREEN_HEIGHT * 0.9,
+    pointerEvents: 'auto',
+  },
+  outerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+});
+
+// Memoized modal component to prevent re-renders from parent state changes
+const CreateTrekModalComponent = React.memo(({
+  visible,
+  newTrek,
+  showDatePicker,
+  creating,
+  onClose,
+  onTrekChange,
+  onDatePickerToggle,
+  onDateChange,
+  onSubmit,
+}: {
+  visible: boolean;
+  newTrek: any;
+  showDatePicker: boolean;
+  creating: boolean;
+  onClose: () => void;
+  onTrekChange: (trek: any) => void;
+  onDatePickerToggle: (show: boolean) => void;
+  onDateChange: (date: Date) => void;
+  onSubmit: () => void;
+}) => (
+  <Modal
+    visible={visible}
+    animationType="slide"
+    transparent={true}
+    onRequestClose={onClose}
+  >
+    <View style={styles.outerBackdrop}>
+      {/* Backdrop - completely separate, doesn't interfere */}
+      <TouchableOpacity
+        style={styles.backdropStyle}
+        activeOpacity={1}
+        onPress={onClose}
+      />
+
+      {/* KeyboardAvoidingView with pointerEvents="box-none" */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalContainer}
+        pointerEvents="box-none"
+      >
+        {/* Modal content with pointerEvents="auto" */}
+        <View style={styles.modalContent}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={{ padding: 20 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <Text style={{ fontSize: 24, fontWeight: '700', color: '#1f2937' }}>Plan Your Trek</Text>
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Ionicons name="close" size={20} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Trek Title *</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
+                  placeholder="e.g., Annapurna Base Camp Trek"
+                  value={newTrek.title}
+                  onChangeText={(t) => onTrekChange({ ...newTrek, title: t })}
+                />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Starting From *</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
+                    placeholder="e.g., Pokhara"
+                    value={newTrek.source}
+                    onChangeText={(t) => onTrekChange({ ...newTrek, source: t })}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Destination *</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
+                    placeholder="e.g., ABC"
+                    value={newTrek.destination}
+                    onChangeText={(t) => onTrekChange({ ...newTrek, destination: t })}
+                  />
+                </View>
+              </View>
+
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Trek Date</Text>
+                <TouchableOpacity
+                  onPress={() => onDatePickerToggle(true)}
+                  style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center' }}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#6b7280" />
+                  <Text style={{ marginLeft: 8, fontSize: 16, color: '#1f2937' }}>
+                    {newTrek.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={newTrek.date}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(_, selectedDate) => {
+                      onDatePickerToggle(false);
+                      if (selectedDate) onDateChange(selectedDate);
+                    }}
+                    minimumDate={new Date()}
+                  />
+                )}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Duration *</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
+                    placeholder="e.g., 7 days"
+                    value={newTrek.duration}
+                    onChangeText={(t) => onTrekChange({ ...newTrek, duration: t })}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Walking Hours</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
+                    placeholder="e.g., 60-70 hours"
+                    value={newTrek.durationHours}
+                    onChangeText={(t) => onTrekChange({ ...newTrek, durationHours: t })}
+                  />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Budget (USD) *</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
+                    placeholder="e.g., 450"
+                    keyboardType="numeric"
+                    value={newTrek.budgetUSD}
+                    onChangeText={(t) => onTrekChange({ ...newTrek, budgetUSD: t })}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Budget (NPR)</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
+                    placeholder="e.g., 60000"
+                    keyboardType="numeric"
+                    value={newTrek.budgetNPR}
+                    onChangeText={(t) => onTrekChange({ ...newTrek, budgetNPR: t })}
+                  />
+                </View>
+              </View>
+
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {['Stories', 'Tips', 'Questions', 'Emergency'].map((cat) => (
+                      <TouchableOpacity
+                        key={cat}
+                        onPress={() => onTrekChange({ ...newTrek, category: cat })}
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 8,
+                          borderRadius: 24,
+                          backgroundColor: newTrek.category === cat ? GREEN : '#f3f4f6',
+                        }}
+                      >
+                        <Text style={{ color: newTrek.category === cat ? '#ffffff' : '#6b7280', fontWeight: '500' }}>{cat}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </View>
+
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Description</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, height: 100, textAlignVertical: 'top', fontSize: 16 }}
+                  placeholder="Share details about your trek plan..."
+                  multiline
+                  value={newTrek.description}
+                  onChangeText={(t) => onTrekChange({ ...newTrek, description: t })}
+                />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={{ flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' }}
+                >
+                  <Text style={{ textAlign: 'center', color: '#6b7280', fontWeight: '600', fontSize: 16 }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={onSubmit}
+                  disabled={creating}
+                  style={{ flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: GREEN }}
+                >
+                  {creating ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text style={{ textAlign: 'center', color: '#ffffff', fontWeight: '600', fontSize: 16 }}>Share Trek</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
+  </Modal>
+));
+
+CreateTrekModalComponent.displayName = 'CreateTrekModal';
 
 export default function CommunityPage() {
   const user = useAuthStore((s) => s.user);
@@ -138,7 +378,7 @@ export default function CommunityPage() {
     }
   };
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setNewTrek({
       title: '',
       source: '',
@@ -151,9 +391,14 @@ export default function CommunityPage() {
       description: '',
       category: 'Stories',
     });
-  };
+  }, []);
 
-  const handleAddTrek = async () => {
+  const handleCloseModal = useCallback(() => {
+    setShowCreateModal(false);
+    resetForm();
+  }, [resetForm]);
+
+  const handleAddTrek = useCallback(async () => {
     if (!newTrek.title.trim()) { Alert.alert('Error', 'Please enter trek title'); return; }
     if (!newTrek.source.trim()) { Alert.alert('Error', 'Please enter starting point'); return; }
     if (!newTrek.destination.trim()) { Alert.alert('Error', 'Please enter destination'); return; }
@@ -184,150 +429,15 @@ export default function CommunityPage() {
     } finally {
       setCreating(false);
     }
-  };
+  }, [newTrek, resetForm]);
 
-  const onDateChange = (_: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) setNewTrek({ ...newTrek, date: selectedDate });
-  };
+  const onDateChange = useCallback((selectedDate: Date) => {
+    if (selectedDate) setNewTrek((prev) => ({ ...prev, date: selectedDate }));
+  }, []);
 
-  const CreateTrekModal = () => (
-    <Modal
-      visible={showCreateModal}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => { setShowCreateModal(false); resetForm(); }}
-    >
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { setShowCreateModal(false); resetForm(); }} />
-          <View style={{
-            backgroundColor: '#ffffff',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            maxHeight: SCREEN_HEIGHT * 0.9,
-          }}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={{ padding: 20 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <Text style={{ fontSize: 24, fontWeight: '700', color: '#1f2937' }}>Plan Your Trek</Text>
-                  <TouchableOpacity onPress={() => { setShowCreateModal(false); resetForm(); }}
-                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="close" size={20} color="#6b7280" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Trek Title *</Text>
-                  <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
-                    placeholder="e.g., Annapurna Base Camp Trek" value={newTrek.title}
-                    onChangeText={(t) => setNewTrek({ ...newTrek, title: t })} />
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Starting From *</Text>
-                    <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
-                      placeholder="e.g., Pokhara" value={newTrek.source}
-                      onChangeText={(t) => setNewTrek({ ...newTrek, source: t })} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Destination *</Text>
-                    <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
-                      placeholder="e.g., ABC" value={newTrek.destination}
-                      onChangeText={(t) => setNewTrek({ ...newTrek, destination: t })} />
-                  </View>
-                </View>
-
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Trek Date</Text>
-                  <TouchableOpacity onPress={() => setShowDatePicker(true)}
-                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="calendar-outline" size={20} color="#6b7280" />
-                    <Text style={{ marginLeft: 8, fontSize: 16, color: '#1f2937' }}>
-                      {newTrek.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </Text>
-                  </TouchableOpacity>
-                  {showDatePicker && (
-                    <DateTimePicker value={newTrek.date} mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      onChange={onDateChange} minimumDate={new Date()} />
-                  )}
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Duration *</Text>
-                    <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
-                      placeholder="e.g., 7 days" value={newTrek.duration}
-                      onChangeText={(t) => setNewTrek({ ...newTrek, duration: t })} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Walking Hours</Text>
-                    <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
-                      placeholder="e.g., 60-70 hours" value={newTrek.durationHours}
-                      onChangeText={(t) => setNewTrek({ ...newTrek, durationHours: t })} />
-                  </View>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Budget (USD) *</Text>
-                    <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
-                      placeholder="e.g., 450" keyboardType="numeric" value={newTrek.budgetUSD}
-                      onChangeText={(t) => setNewTrek({ ...newTrek, budgetUSD: t })} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Budget (NPR)</Text>
-                    <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, fontSize: 16 }}
-                      placeholder="e.g., 60000" keyboardType="numeric" value={newTrek.budgetNPR}
-                      onChangeText={(t) => setNewTrek({ ...newTrek, budgetNPR: t })} />
-                  </View>
-                </View>
-
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Category</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      {['Stories', 'Tips', 'Questions', 'Emergency'].map((cat) => (
-                        <TouchableOpacity key={cat} onPress={() => setNewTrek({ ...newTrek, category: cat })}
-                          style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 24,
-                            backgroundColor: newTrek.category === cat ? GREEN : '#f3f4f6' }}>
-                          <Text style={{ color: newTrek.category === cat ? '#ffffff' : '#6b7280', fontWeight: '500' }}>{cat}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
-
-                <View style={{ marginBottom: 20 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Description</Text>
-                  <TextInput style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 12, height: 100, textAlignVertical: 'top', fontSize: 16 }}
-                    placeholder="Share details about your trek plan..." multiline value={newTrek.description}
-                    onChangeText={(t) => setNewTrek({ ...newTrek, description: t })} />
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
-                  <TouchableOpacity onPress={() => { setShowCreateModal(false); resetForm(); }}
-                    style={{ flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' }}>
-                    <Text style={{ textAlign: 'center', color: '#6b7280', fontWeight: '600', fontSize: 16 }}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleAddTrek} disabled={creating}
-                    style={{ flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: GREEN }}>
-                    {creating ? (
-                      <ActivityIndicator color="#ffffff" />
-                    ) : (
-                      <Text style={{ textAlign: 'center', color: '#ffffff', fontWeight: '600', fontSize: 16 }}>Share Trek</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
+  const handleTrekChange = useCallback((updatedTrek: any) => {
+    setNewTrek(updatedTrek);
+  }, []);
 
   const TrekCard = ({ post }: { post: CommunityPost }) => {
     const isOwn = user?.id === post.userId;
@@ -657,7 +767,17 @@ export default function CommunityPage() {
       </TouchableOpacity>
 
       <FilterModal />
-      <CreateTrekModal />
+      <CreateTrekModalComponent
+        visible={showCreateModal}
+        newTrek={newTrek}
+        showDatePicker={showDatePicker}
+        creating={creating}
+        onClose={handleCloseModal}
+        onTrekChange={handleTrekChange}
+        onDatePickerToggle={setShowDatePicker}
+        onDateChange={onDateChange}
+        onSubmit={handleAddTrek}
+      />
     </SafeAreaView>
   );
 }
