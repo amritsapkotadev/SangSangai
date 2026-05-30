@@ -17,7 +17,7 @@ export async function POST(
       console.warn("⚠️ [API] DATABASE_URL missing. Proceeding with mock trip completion.");
       
       // Simulate blockchain minting for hackathon UI flow
-      const txHash = await mintPoints("0xDemoGuideWalletAddress12345", 200, matchId);
+      const txHash = await mintPoints("0xDemoGuideWalletAddress12345", 200);
       
       return NextResponse.json({
         success: true,
@@ -58,7 +58,7 @@ export async function POST(
     let txHash = null;
 
     if (guideWallet) {
-      txHash = await mintPoints(guideWallet, 200, match.tripId);
+      txHash = await mintPoints(guideWallet, 200);
 
       // Record to SangPoints ledger
       await prisma.sangPointsLedger.create({
