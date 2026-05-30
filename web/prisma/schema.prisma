@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String
+  role             String   @default("FOREIGN")
+  name             String
+  nationality      String?
+  walletAddress    String?
+  emergencyContact String?
+  emergencyPhone   String?
+  hashedId         String   @unique
+  phone            String?
+  avatarUrl        String?
+  isVerified       Boolean  @default(false)
+  isBanned         Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  guideTrips           Trip[]             @relation("GuideTrips")
+  trekkerTrips         Trip[]             @relation("TrekkerTrips")
+  notificationLogs     NotificationLog[]
+  uploadedFiles        UploadedFile[]
+  communityPosts       CommunityPost[]
+  communityLikes       CommunityLike[]
+  communitySaves       CommunitySave[]
+  communityComments    CommunityComment[]
+}
+
+model Route {
+  id           String   @id @default(uuid())
+  name         String
+  description  String
+  region       String
+  durationDays Int
+  difficulty   String   @default("moderate")
+  imageUrl     String?
+  createdAt    DateTime @default(now())
+
+  waypoints Waypoint[]
+  trips     Trip[]
+}
+
+model Waypoint {
+  id             String   @id @default(uuid())
+  routeId        String
+  name           String
+  order          Int
+  estimatedHours Float
+  latitude       Float?
+  longitude      Float?
+  description    String?
+  createdAt      DateTime @default(now())
+
+  route              Route              @relation(fields: [routeId], references: [id])
+  waypointProgresses WaypointProgress[]
+}
+
+model Trip {
+  id        String   @id @default(uuid())
+  guideId   String
+  trekkerId String?
+  routeId   String
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guide             User            @relation("GuideTrips", fields: [guideId], references: [id])
+  trekker           User?           @relation("TrekkerTrips", fields: [trekkerId], references: [id])
+  route             Route           @relation(fields: [routeId], references: [id])
+  matchesAsGuide    Match[]         @relation("GuideTrip")
+  matchesAsTrekker  Match[]         @relation("TrekkerTrip")
+  knowledgeCard     KnowledgeCard?
+}
+
+model Match {
+  id              String   @id @default(uuid())
+  guideTripId     String
+  trekkerTripId   String
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  departedAt      DateTime?
+  completedAt     DateTime?
+
+  guideTrip          Trip                @relation("GuideTrip", fields: [guideTripId], references: [id])
+  trekkerTrip        Trip                @relation("TrekkerTrip", fields: [trekkerTripId], references: [id])
+  waypointProgresses WaypointProgress[]
+  ledgerEntries      SangPointsLedger[]
+  notificationLogs   NotificationLog[]
+}
+
+model WaypointProgress {
+  id               String   @id @default(uuid())
+  matchId          String
+  waypointId       String
+  confirmedAt      DateTime?
+  overdueAlertSent Boolean  @default(false)
+
+  match    Match   @relation(fields: [matchId], references: [id])
+  waypoint Waypoint @relation(fields: [waypointId], references: [id])
+
+  @@unique([matchId, waypointId])
+}
+
+model KnowledgeCard {
+  id        String   @id @default(uuid())
+  tripId    String   @unique
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id])
+}
+
+model SangPointsLedger {
+  id            String   @id @default(uuid())
+  matchId       String
+  walletAddress String
+  amount        Int
+  type          String
+  txHash        String?
+  createdAt     DateTime @default(now())
+
+  match Match @relation(fields: [matchId], references: [id])
+}
+
+model UploadedFile {
+  id         String    @id @default(uuid())
+  userId     String
+  fileName   String
+  fileUrl    String
+  fileType   String
+  status     String    @default("PENDING")
+  notes      String?
+  uploadedAt DateTime  @default(now())
+  reviewedAt DateTime?
+  reviewedBy String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model CommunityPost {
+  id            String   @id @default(uuid())
+  userId        String
+  title         String
+  source        String
+  destination   String
+  trekDate      DateTime?
+  duration      String
+  durationHours String?
+  budgetUSD     String?
+  budgetNPR     String?
+  description   String?
+  category      String   @default("Stories")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user     User              @relation(fields: [userId], references: [id])
+  likes    CommunityLike[]
+  saves    CommunitySave[]
+  comments CommunityComment[]
+}
+
+model CommunityLike {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+model CommunitySave {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+model CommunityComment {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id])
+}
+
+model NotificationLog {
+  id              String   @id @default(uuid())
+  matchId         String?
+  recipientUserId String?
+  type            String
+  title           String
+  body            String
+  sentAt          DateTime @default(now())
+  success         Boolean  @default(true)
+
+  match     Match? @relation(fields: [matchId], references: [id])
+  recipient User?  @relation(fields: [recipientUserId], references: [id])
+}
