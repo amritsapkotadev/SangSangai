@@ -44,7 +44,9 @@ export default function TabLayout() {
           headerShown: false,
           title: 'Explore',
           tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>🗺️</Text>
+            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
+              🏔️
+            </Text>
           ),
         }}
       />
@@ -52,9 +54,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="browse"
         options={{
+          headerShown: false,
           title: 'Search',
           tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>🔍</Text>
+            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
+              🔍
+            </Text>
           ),
         }}
       />
@@ -65,7 +70,9 @@ export default function TabLayout() {
           headerShown: false,
           title: 'Community',
           tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>💬</Text>
+            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
+              👥
+            </Text>
           ),
         }}
       />
@@ -73,9 +80,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
+          headerShown: false,
           title: 'Activity',
           tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>❤️</Text>
+            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
+              🔔
+            </Text>
           ),
         }}
       />
@@ -83,9 +93,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          headerShown: false,
           title: 'Profile',
           tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>👤</Text>
+            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
+              👤
+            </Text>
           ),
         }}
       />
