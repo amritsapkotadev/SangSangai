@@ -14,7 +14,7 @@ const INITIAL_NOTIFS = [
     time: '2 hours ago',
     type: 'reminder',
     read: false,
-    icon: '⏰'
+    icon: 'alarm-outline'
   },
   { 
     id: '2', 
@@ -23,7 +23,7 @@ const INITIAL_NOTIFS = [
     time: '1 day ago',
     type: 'tip',
     read: false,
-    icon: '⚠️'
+    icon: 'shield-outline'
   },
   { 
     id: '3', 
@@ -32,7 +32,7 @@ const INITIAL_NOTIFS = [
     time: '2 days ago',
     type: 'booking',
     read: true,
-    icon: '✅'
+    icon: 'checkmark-circle-outline'
   },
   { 
     id: '4', 
@@ -41,7 +41,7 @@ const INITIAL_NOTIFS = [
     time: '3 days ago',
     type: 'offer',
     read: true,
-    icon: '🏷️'
+    icon: 'pricetag-outline'
   },
   { 
     id: '5', 
@@ -50,7 +50,7 @@ const INITIAL_NOTIFS = [
     time: '5 days ago',
     type: 'alert',
     read: false,
-    icon: '🌧️'
+    icon: 'cloudy-outline'
   },
 ];
 
@@ -137,7 +137,7 @@ export default function NotificationsScreen() {
       activeOpacity={0.7}
     >
       <View style={styles.iconContainer}>
-        <Text style={styles.itemIcon}>{item.icon}</Text>
+        <Ionicons name={item.icon} size={20} color="#8E8E93" />
       </View>
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
@@ -154,7 +154,7 @@ export default function NotificationsScreen() {
 
   const EmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>🔔</Text>
+      <Ionicons name="notifications-off-outline" size={64} color="#C7C7CC" style={{ marginBottom: 16 }} />
       <Text style={styles.emptyTitle}>No notifications</Text>
       <Text style={styles.emptyText}>
         When you receive notifications, they'll appear here
@@ -309,9 +309,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  itemIcon: {
-    fontSize: 20,
-  },
   contentContainer: {
     flex: 1,
   },
@@ -353,11 +350,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-    opacity: 0.5,
   },
   emptyTitle: {
     fontSize: 20,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Platform, View, Text, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const GREEN = '#059669';
 
@@ -43,10 +44,8 @@ export default function TabLayout() {
         options={{
           headerShown: false,
           title: 'Explore',
-          tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
-              🏔️
-            </Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name="compass-outline" size={size} color={color} />
           ),
         }}
       />
@@ -56,10 +55,8 @@ export default function TabLayout() {
         options={{
           headerShown: false,
           title: 'Search',
-          tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
-              🔍
-            </Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name="search-outline" size={size} color={color} />
           ),
         }}
       />
@@ -69,10 +66,8 @@ export default function TabLayout() {
         options={{
           headerShown: false,
           title: 'Community',
-          tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
-              👥
-            </Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name="chatbubbles-outline" size={size} color={color} />
           ),
         }}
       />
@@ -82,10 +77,8 @@ export default function TabLayout() {
         options={{
           headerShown: false,
           title: 'Activity',
-          tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
-              🔔
-            </Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name="heart-outline" size={size} color={color} />
           ),
         }}
       />
@@ -95,17 +88,11 @@ export default function TabLayout() {
         options={{
           headerShown: false,
           title: 'Profile',
-          tabBarIcon: ({ focused }) => (
-            <Text style={[styles.icon, { color: focused ? GREEN : '#8E8E93' }]}>
-              👤
-            </Text>
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  icon: { fontSize: 22 },
-});
