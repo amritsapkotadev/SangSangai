@@ -1,70 +1,48 @@
-JunctionXkathmandu hackathon 2026
-Theme: Heritage and Culture
-Team: TECDEVx
+# SangSangai — Safe Trekking, Side by Side 🏔️
 
-What we're building
-SangSangai is a trekking safety app that connects Nepali guides with foreign trekkers, tracks their journey through waypoints, alerts emergency contacts if someone goes missing, and rewards Nepali guides with SangPoints on the Polygon blockchain. The entire backend — for the mobile app, the admin panel, and the web — runs on a single Next.js project.
+**JunctionX Kathmandu Hackathon 2026**  
+**Theme: Heritage & Culture | Team: TECDEVx**
 
-Why Next.js as the unified backend
-The original plan had a separate Express/Node.js server. Moving to Next.js means one codebase handles everything: the API (via Route Handlers), the admin dashboard (via Next.js pages), and optionally a public marketing site. The mobile app (React Native/Expo) simply calls the Next.js API endpoints over HTTP, exactly as it would call Express. Nothing changes on the mobile side — only the server changes.
+---
 
-Project structure
-One Next.js repo with three distinct zones:
-app/api/ — all REST endpoints consumed by the mobile app. This replaces the entire Express server.
-app/admin/ — the admin panel, built as protected Next.js pages. Only accessible with an admin JWT or session.
-app/(public)/ — optional landing page and marketing content.
+## The Problem
 
-Database and infrastructure
-Supabase (PostgreSQL) remains the database, connected via Prisma. Nothing changes here. The same schema — users, trips, matches, routes, waypoints, sangpoints ledger — works identically. The blockchain bridge file (sangpoints.js using ethers.js) is dropped into the Next.js project as a utility and called from the relevant route handlers.
+Nepal draws hundreds of thousands of trekkers every year to its legendary Himalayan trails. Yet the trekking ecosystem remains fractured and risky for both sides. Foreign trekkers struggle to find reliable local guides, often relying on word of mouth or unverified online listings. Nepali guides, who carry generations of mountain knowledge, lack a digital platform to showcase their expertise and connect with incoming travelers. Emergency response is ad hoc — when a trekker goes missing, there is no structured alert system. And for cultural heritage routes that pass through ancient villages and sacred sites, there is no way to preserve and share the knowledge that local guides hold.
 
-API layer — what the mobile app calls
-Every endpoint the mobile app needs is a Next.js Route Handler. These map directly to what the original Express server was doing:
-POST /api/auth/register — register Nepali or foreign user, hash ID, return JWT
-POST /api/auth/login — email and password login, return JWT
-GET /api/users/me — return profile of logged-in user from JWT
-POST /api/trips — create a trip, auto-assign waypoints from the route
-GET /api/trips/matches — browse trips matching destination and dates
-POST /api/matches — send a connection request
-PUT /api/matches/[id]/accept — accept a match, fire Firebase notification
-PUT /api/matches/[id]/depart — both groups confirm departure, record on blockchain
-POST /api/waypoints/[id]/confirm — confirm reaching a waypoint, alert emergency contacts
-PUT /api/matches/[id]/complete — complete trip, mint 200 SangPoints to Nepali wallet
-GET/POST /api/trips/[id]/knowledge-card — Nepali guide writes itinerary, foreign trekker reads it after match
-The cron job for waypoint overdue alerts runs as a Next.js cron route or via Vercel's built-in cron scheduler, checking every 30 minutes and firing Firebase push notifications.
+## What SangSangai Does
 
-Admin panel — what the admin sees
-The admin panel lives at /admin and is protected by a separate middleware that checks for an admin role in the JWT. It is a set of Next.js server-rendered pages that call the same Prisma client and display data directly — no extra API calls needed since it runs server-side in the same project.
-Admin can see and manage:
-Users — view all registered users, verify or ban accounts, see Nepali vs foreign breakdown
-Trips — see all active and completed trips, view knowledge cards, check trip status
-Matches — see all matched pairs, their current waypoint progress, departure times
-Waypoint alerts — see which trips have triggered overdue alerts and which emergency contacts were notified
-SangPoints ledger — see all minting and redeeming transactions with blockchain hashes
-Firebase logs — see which push notifications were sent and to whom
+SangSangai is a mobile-first platform that bridges Nepali guides and foreign trekkers, making every Himalayan journey safer, more connected, and culturally richer. The name comes from the Nepali word for "togetherness" — the idea that trekking is safest and most fulfilling when done side by side.
 
-Blockchain integration
-The sangpoints.js bridge file sits in lib/sangpoints.js inside the Next.js project. The route handler for trip completion calls mintPoints(walletAddress, 200), receives the transaction hash, and saves it to the sangpoints ledger table in Supabase. The admin panel reads this ledger to show the judge a live view of on-chain activity. The profile screen on the mobile app calls GET /api/users/me/sangpoints which internally calls getBalance(walletAddress) from the bridge file and returns the live number from the Polygon Amoy chain.
+### For Trekkers
 
-Firebase push notifications
-Firebase Admin SDK is initialized once in lib/firebase.js inside the Next.js project. Every route handler that needs to fire a notification imports this and calls it directly. Notifications fire at four moments: match accepted, departure confirmed, waypoint overdue alert, and trip completed safely. The admin panel shows a log of all sent notifications.
+The app begins with a curated onboarding experience that introduces the platform's values. Trekkers can browse available trips created by verified Nepali guides, filtering by destination, difficulty, duration, and budget. Each trip listing shows the guide's profile, rating, and verification status. Once a match is made, both parties can communicate and prepare for the journey.
 
-Authentication strategy
-Mobile app users — JWT issued at login, sent as a Bearer token in every request header, verified in a middleware wrapper around each route handler.
-Admin users — separate JWT with role: admin, verified by a Next.js middleware in middleware.ts that protects all /admin routes. Admin accounts are seeded manually in the database, not registered through the app.
+During the trek, real-time location tracking lets the trekker share their progress with emergency contacts back home. The system monitors waypoint check-ins and automatically alerts designated contacts if a trekker fails to arrive at a scheduled point. A knowledge card feature lets guides share cultural and historical insights about the places they pass through — the story behind a mani wall, the significance of a village festival, the medicinal use of a Himalayan plant — turning every trek into a living cultural exchange.
 
-Demo data
-Two seed scripts run via npx prisma db seed:
-First script creates Aarav (Nepali, Mardi Himal trip June 14–17, knowledge card pre-filled) and Leon (German, matching trip, emergency contact set).
-Second script creates the Mardi Himal route with four waypoints: Pokhara at 6 hours, Kande at 8 hours, Forest Camp at 12 hours, Mardi Base at 16 hours.
-The demo wallet on MetaMask Amoy is pre-loaded with 500 SangPoints by calling mintPoints once before the demo.
+### For Guides
 
-Deployment
-The entire project deploys to Vercel in one command. Environment variables — Supabase connection string, JWT secret, Firebase service account JSON, blockchain private key, contract address — all go into Vercel's environment settings. The cron job is configured in vercel.json. The mobile app's API_BASE_URL is set to the Vercel deployment URL.
+Nepali guides can create detailed trip listings showcasing their routes, experience, and local knowledge. Verified guides earn trust badges that help them stand out. Upon successfully completing a trek, guides are rewarded with SangPoints, a blockchain-based loyalty token that recognizes their contribution to safe and culturally rich trekking. These points are minted on the Polygon blockchain and can be viewed in their profile.
 
-What each team member owns
-Blockchain friend — lib/sangpoints.js, the deployed contract on Amoy, the demo wallet. Hands the bridge file to the Next.js project once tested.
-Backend friend — all files under app/api/, lib/firebase.js, lib/prisma.js, the seed scripts, and the cron route. This is the bulk of the Next.js backend work.
-Frontend friend — the React Native app in a separate repo. Calls the Next.js API URLs. Also optionally helps with the admin panel pages under app/admin/ since they use React.
+### For Everyone
 
-Key advantage of this approach
-One deployment, one codebase, one set of environment variables. The admin panel and the mobile API share the same Prisma client, the same Firebase instance, and the same blockchain bridge — so there is no duplication and no sync issues between a separate backend and a separate admin server. Judges see a polished admin dashboard and a working mobile app both powered by the same system.
+The community feature transforms SangSangai into more than a booking platform. Guides and trekkers alike can share stories, tips, and questions about treks, creating a living knowledge base of Himalayan travel. Users can like, save, and filter posts by category — stories, tips, questions, or emergencies — building a supportive community around the shared love of the mountains.
+
+## The Cultural Context
+
+Nepal's trekking routes are not just physical paths — they are corridors of living heritage. The Annapurna Circuit passes through Buddhist monasteries and Hindu pilgrimage sites. The Langtang Valley is home to Tamang communities with distinct traditions. The trails around Everest carry the history of Sherpa mountaineering culture. SangSangai treats this cultural fabric as integral to the trekking experience, not an afterthought. By enabling guides to document and share cultural knowledge, and by connecting travelers directly with local experts, the platform helps sustain the very heritage that makes Nepal's mountains unique.
+
+## How It Works
+
+A foreign trekker lands on the app and browses available treks posted by Nepali guides. They find a seven-day Annapurna Base Camp trek led by a verified guide from Pokhara. The match is made. The guide shares a knowledge card about the rhododendron forests and the cultural significance of the Annapurna sanctuary. The trekker's family back home receives a tracking link. Every waypoint check-in sends them reassurance. If the trekker goes overdue at Forest Camp, the system alerts the emergency contact. When both reach Mardi Base safely and the trek concludes, the guide receives SangPoints as a token of a job well done.
+
+This is the vision: technology that does not replace human connection but strengthens it — making the Himalayas safer while honoring the cultural heritage that has drawn people to these mountains for generations.
+
+## What We Built
+
+Over the course of this hackathon, we built the complete end-to-end platform. The backend serves a comprehensive REST API handling authentication, user management, trip creation and matching, waypoint tracking, emergency alerting, file uploads and document verification, community posts with likes and saves, and blockchain-based SangPoints minting. The admin dashboard gives platform administrators full visibility into users, trips, matches, uploads, alerts, and token transactions. The mobile app, built with Expo and React Native, delivers a polished user experience across onboarding, authentication, browsing, matching, community interaction, and profile management — all integrated with the live backend.
+
+The entire system runs on a single unified backend deployed on Vercel, with a Neon PostgreSQL database and Prisma for data access. The mobile app communicates with the backend over standard HTTP APIs, making the architecture clean and maintainable.
+
+## The Team — TECDEVx
+
+We are a team of developers and designers who believe technology can make adventure safer without making it less adventurous. SangSangai is our answer to the question of how Nepal's trekking heritage can thrive in a digital age — by putting the guide back at the center of the experience, by building safety into the journey itself, and by creating a community that celebrates the mountains and the people who call them home.
