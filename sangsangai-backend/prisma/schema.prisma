@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  role            Role     @default(TREKKER)   // TREKKER | GUIDE | ADMIN
+  walletAddress   String?
+  fcmToken        String?
+  emergencyContact String?
+  createdAt       DateTime @default(now())
+
+  tripsAsGuide    Trip[]   @relation("GuideTrips")
+  tripsAsTrekker  Trip[]   @relation("TrekkerTrips")
+  matchesGuide    Match[]  @relation("GuideMatches")
+  matchesTrekker  Match[]  @relation("TrekkerMatches")
+  sangPoints      SangPointsLedger[]
+}
+
+model Route {
+  id        String      @id @default(cuid())
+  name      String
+  waypoints Waypoint[]
+  trips     Trip[]
+}
+
+model Waypoint {
+  id              String   @id @default(cuid())
+  routeId         String
+  route           Route    @relation(fields: [routeId], references: [id])
+  label           String
+  expectedHours   Int
+  order           Int
+  confirmations   WaypointConfirmation[]
+}
+
+model Trip {
+  id          String    @id @default(cuid())
+  guideId     String
+  trekkerId   String?
+  routeId     String
+  startDate   DateTime
+  endDate     DateTime
+  status      TripStatus @default(OPEN)
+  knowledgeCard String?
+  guide       User      @relation("GuideTrips", fields: [guideId], references: [id])
+  trekker     User?     @relation("TrekkerTrips", fields: [trekkerId], references: [id])
+  route       Route     @relation(fields: [routeId], references: [id])
+  matches     Match[]
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  tripId      String
+  guideId     String
+  trekkerId   String
+  status      MatchStatus @default(PENDING)
+  departedAt  DateTime?
+  completedAt DateTime?
+  txHash      String?
+  trip        Trip        @relation(fields: [tripId], references: [id])
+  guide       User        @relation("GuideMatches", fields: [guideId], references: [id])
+  trekker     User        @relation("TrekkerMatches", fields: [trekkerId], references: [id])
+}
+
+model WaypointConfirmation {
+  id          String   @id @default(cuid())
+  waypointId  String
+  matchId     String
+  confirmedAt DateTime @default(now())
+  waypoint    Waypoint @relation(fields: [waypointId], references: [id])
+}
+
+model SangPointsLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  type      LedgerType // MINT | REDEEM
+  txHash    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  TREKKER
+  GUIDE
+  ADMIN
+}
+
+enum TripStatus {
+  OPEN
+  MATCHED
+  DEPARTED
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  DEPARTED
+  COMPLETED
+  REJECTED
+}
+
+enum LedgerType {
+  MINT
+  REDEEM
+}

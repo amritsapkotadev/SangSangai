@@ -1,0 +1,25 @@
+{
+  "name": "sangsangai-blockchain",
+  "version": "1.0.0",
+  "description": "SangPoints smart contract for SangSangai trekking safety app",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy:local": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy:amoy": "npx hardhat run scripts/deploy.ts --network amoy",
+    "verify": "npx hardhat verify --network amoy",
+    "node": "npx hardhat node",
+    "clean": "npx hardhat clean"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.22.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "@types/node": "^20.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
+  }
+}
