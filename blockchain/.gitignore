@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Hardhat build artifacts
+artifacts/
+cache/
+typechain-types/
+
+# Deployment records (commit these so team can see the address)
+# deployments/          ← intentionally NOT ignored
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
