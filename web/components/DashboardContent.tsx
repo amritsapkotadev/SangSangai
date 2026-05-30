@@ -214,7 +214,7 @@ export function DashboardContent({ user, sangPointsBalance }: { user: UserData; 
                 <span>Unverified</span>
               )}
             </div>
-            {sangPointsBalance && (
+            {user.role === "NEPALI" && sangPointsBalance && (
               <div className="mt-2 flex items-center gap-1.5 text-sm">
                 <Coins className="h-4 w-4 text-amber-500" />
                 <span className="font-semibold text-amber-600">

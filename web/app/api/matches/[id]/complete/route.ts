@@ -26,6 +26,11 @@ export async function PUT(
             guide: { select: { id: true, name: true, walletAddress: true } },
           },
         },
+        trekkerTrip: {
+          include: {
+            trekker: { select: { id: true, name: true, walletAddress: true, role: true } },
+          },
+        },
         waypointProgresses: true,
       },
     });
@@ -89,6 +94,26 @@ export async function PUT(
         txHash,
       },
     });
+
+    let trekkerTxHash: string | null = null;
+    const trekker = match.trekkerTrip.trekker;
+    if (trekker?.role === "NEPALI" && trekker.walletAddress) {
+      try {
+        trekkerTxHash = await mintPoints(trekker.walletAddress, SANGPOINTS_REWARD);
+      } catch (blockchainError) {
+        console.error("Blockchain minting for trekker failed, continuing:", blockchainError);
+      }
+
+      await prisma.sangPointsLedger.create({
+        data: {
+          matchId: id,
+          walletAddress: trekker.walletAddress,
+          amount: SANGPOINTS_REWARD,
+          type: "MINT",
+          txHash: trekkerTxHash,
+        },
+      });
+    }
 
     await prisma.notificationLog.create({
       data: {

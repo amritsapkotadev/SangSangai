@@ -19,6 +19,7 @@ export default function ProfileScreen() {
   const [emailNotifications, setEmailNotifications] = React.useState(true);
 
   useEffect(() => {
+    if (user?.role !== "NEPALI") return;
     (async () => {
       try {
         const res = await api.get('/api/users/me/sangpoints');
@@ -27,7 +28,7 @@ export default function ProfileScreen() {
         }
       } catch { /* backend unreachable — show 0 */ }
     })();
-  }, []);
+  }, [user?.role]);
 
   const getInitials = (name: string) =>
     name
@@ -183,14 +184,18 @@ export default function ProfileScreen() {
         elevation: 2,
       }}>
         <StatCard value="0" label="Trips" />
-        <View style={{ width: 1, height: 30, backgroundColor: '#F0F0F0', marginHorizontal: 16 }} />
-        <View style={{ alignItems: 'center', flex: 1 }}>
-          <View className="flex-row items-center gap-1 mb-1">
-            <Coins color={GREEN} size={18} />
-            <Text style={{ fontSize: 22, fontWeight: '700', color: GREEN }}>{sangPointsBalance}</Text>
-          </View>
-          <Text style={{ fontSize: 12, color: '#8E8E93' }}>SangPoints</Text>
-        </View>
+        {user?.role === "NEPALI" && (
+          <>
+            <View style={{ width: 1, height: 30, backgroundColor: '#F0F0F0', marginHorizontal: 16 }} />
+            <View style={{ alignItems: 'center', flex: 1 }}>
+              <View className="flex-row items-center gap-1 mb-1">
+                <Coins color={GREEN} size={18} />
+                <Text style={{ fontSize: 22, fontWeight: '700', color: GREEN }}>{sangPointsBalance}</Text>
+              </View>
+              <Text style={{ fontSize: 12, color: '#8E8E93' }}>SangPoints</Text>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Menu Sections */}
