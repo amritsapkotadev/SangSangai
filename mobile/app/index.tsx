@@ -1,202 +1,224 @@
-import React, { useRef, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  FlatList, 
-  Dimensions,
-  StatusBar,
-  Animated
-} from 'react-native';
+import React, { useEffect, useRef, useCallback } from 'react';
+import { View, Text, Animated, StatusBar, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuthStore } from '../src/stores/authStore';
+import { storage } from '../src/lib/storage';
+import { COLORS } from '../src/constants/theme';
 
-const { width, height } = Dimensions.get('window');
-
-// Animated FlatList to support native-driven onScroll
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
-
-const FEATURES = [
-  { 
-    id: 'f1', 
-    title: 'Connect with Local Experts',
-    desc: 'Find verified local guides who know every trail and can ensure your safety.',
-    icon: 'account-group',
-    color: '#6366f1'
-  },
-  { 
-    id: 'f2', 
-    title: 'Live Trek Tracking',
-    desc: 'Share your real-time location with family and friends for complete peace of mind.',
-    icon: 'map-marker-path',
-    color: '#f59e0b'
-  },
-  { 
-    id: 'f3', 
-    title: 'Secure Transactions',
-    desc: 'Pay with confidence using our escrow system that protects both trekkers and guides.',
-    icon: 'shield-lock',
-    color: '#10b981'
-  },
-];
-
-export default function WelcomeScreen() {
+export default function SplashEntryScreen() {
   const router = useRouter();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<any>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      setCurrentIndex(viewableItems[0].index);
+  const logoScale = useRef(new Animated.Value(0)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const textTranslateY = useRef(new Animated.Value(40)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const mountAnim = useRef(new Animated.Value(0)).current;
+
+  const navigateNext = useCallback(async () => {
+    if (isLoading) return;
+
+    if (isAuthenticated) {
+      router.replace('/(tabs)/dashboard');
+      return;
     }
-  }).current;
 
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 50,
-  };
+    const onboardingSeen = await storage.getOnboardingSeen();
+    if (!onboardingSeen) {
+      router.replace('/onboarding');
+    } else {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
-  const renderItem = ({ item, index }: any) => {
-    const inputRange = [
-      (index - 1) * width,
-      index * width,
-      (index + 1) * width,
-    ];
-    
-    const scale = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.9, 1, 0.9],
-      extrapolate: 'clamp',
-    });
-    
-    const opacity = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.5, 1, 0.5],
-      extrapolate: 'clamp',
-    });
+  useEffect(() => {
+    Animated.timing(mountAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
 
-    return (
-      <View style={{ width, paddingHorizontal: 40, justifyContent: 'center' }}>
-        <Animated.View
-          style={{
-            transform: [{ scale }],
-            opacity,
-          }}
-        >
-          <View className="items-center">
-            <View
-              style={{
-                width: 140,
-                height: 140,
-                borderRadius: 70,
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: 40,
-                backgroundColor: item.color,
-              }}
-            >
-              <MaterialCommunityIcons name={item.icon} size={64} color="#ffffff" />
-            </View>
-            
-            <Text className="text-2xl font-bold text-gray-900 text-center mb-3">
-              {item.title}
-            </Text>
-            
-            <Text className="text-base text-gray-600 text-center leading-6">
-              {item.desc}
-            </Text>
-          </View>
-        </Animated.View>
-      </View>
-    );
-  };
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(logoScale, {
+          toValue: 1,
+          friction: 3,
+          tension: 35,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(textTranslateY, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(taglineOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const timer = setTimeout(navigateNext, 2600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(navigateNext, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   return (
-    <>
-      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
-      <View style={{ flex: 1, backgroundColor: '#0f172a' }}>
-        <View style={{ flex: 1 }}>
-          {/* Header */}
-          <View className="items-center pt-16 pb-8">
-            <View className="w-24 h-24 bg-white/10 rounded-2xl items-center justify-center mb-4 backdrop-blur-lg border border-white/20">
-              <MaterialCommunityIcons name="compass" size={48} color="#ffffff" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.primaryDark]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.content}>
+        <Animated.View
+          style={[
+            styles.logoOuter,
+            {
+              opacity: logoOpacity,
+              transform: [{ scale: logoScale }],
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.logoGlow}
+          >
+            <View style={styles.logoInner}>
+              <MaterialCommunityIcons name="compass" size={56} color="#ffffff" />
             </View>
-            <Text className="text-3xl font-bold text-white">SangSangai</Text>
-            <Text className="text-indigo-200 mt-2">Safe trekking, side by side</Text>
-          </View>
+          </LinearGradient>
+        </Animated.View>
 
-          {/* Carousel */}
-          <View style={{ flex: 1 }}>
-            <AnimatedFlatList
-              ref={flatListRef}
-              data={FEATURES}
-              keyExtractor={(item: any) => item.id}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onScroll={Animated.event(
-                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                { useNativeDriver: true }
-              )}
-              onViewableItemsChanged={onViewableItemsChanged}
-              viewabilityConfig={viewabilityConfig}
-              renderItem={renderItem}
-            />
-          </View>
+        <Animated.View
+          style={[
+            styles.textContainer,
+            {
+              opacity: textOpacity,
+              transform: [{ translateY: textTranslateY }],
+            },
+          ]}
+        >
+          <Text style={styles.title}>SangSangai</Text>
+        </Animated.View>
 
-          {/* Pagination */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
-            {FEATURES.map((_, index) => {
-              const active = currentIndex === index;
-              return (
-                <View
-                  key={index}
-                  style={{
-                    height: 8,
-                    width: active ? 32 : 8,
-                    borderRadius: 4,
-                    marginHorizontal: 4,
-                    backgroundColor: active ? '#6366f1' : 'rgba(99,102,241,0.28)'
-                  }}
-                />
-              );
-            })}
-          </View>
-
-          {/* Buttons */}
-          <View className="px-8 pb-12">
-            <TouchableOpacity
-              onPress={() => router.push('/login')}
-              style={{ marginBottom: 12 }}
-            >
-              <View
-                style={{
-                  backgroundColor: '#6366f1',
-                  borderRadius: 16,
-                  paddingVertical: 16,
-                  alignItems: 'center',
-                }}
-              >
-                <Text className="text-white font-bold text-lg">Get Started</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push('/signup')}
-              className="py-4 rounded-xl items-center border border-indigo-500/30"
-            >
-              <Text className="text-indigo-300 font-semibold">Create New Account</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => router.push('/home')}
-              className="mt-6 items-center"
-            >
-              <Text className="text-gray-400 text-sm">Already have an account? Sign In</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <Animated.View style={[styles.taglineContainer, { opacity: taglineOpacity }]}>
+          <View style={styles.taglineLine} />
+          <Text style={styles.tagline}>Safe trekking, side by side</Text>
+          <View style={styles.taglineLine} />
+        </Animated.View>
       </View>
-    </>
+
+      <Animated.View style={[styles.footer, { opacity: taglineOpacity }]}>
+        <View style={styles.loadingDot} />
+        <View style={[styles.loadingDot, styles.loadingDotActive]} />
+        <View style={styles.loadingDot} />
+      </Animated.View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  logoOuter: {
+    marginBottom: 40,
+  },
+  logoGlow: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  logoInner: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: -1.5,
+  },
+  taglineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  taglineLine: {
+    width: 24,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  tagline: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+    letterSpacing: 0.8,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    paddingBottom: 60,
+  },
+  loadingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  loadingDotActive: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+});

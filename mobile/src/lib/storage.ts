@@ -5,6 +5,8 @@ const DEBUG = true;
 const KEYS = {
   TOKEN: "auth_token",
   USER: "auth_user",
+  ONBOARDING_SEEN: "onboarding_seen",
+  REQUESTS: "pending_requests",
 } as const;
 
 export const storage = {
@@ -32,5 +34,26 @@ export const storage = {
   async hasToken(): Promise<boolean> {
     const token = await SecureStore.getItemAsync(KEYS.TOKEN);
     return token !== null;
+  },
+
+  async getOnboardingSeen(): Promise<boolean> {
+    const val = await SecureStore.getItemAsync(KEYS.ONBOARDING_SEEN);
+    return val === "true";
+  },
+
+  async setOnboardingSeen(seen: boolean): Promise<void> {
+    if (seen) {
+      await SecureStore.setItemAsync(KEYS.ONBOARDING_SEEN, "true");
+    } else {
+      await SecureStore.deleteItemAsync(KEYS.ONBOARDING_SEEN);
+    }
+  },
+
+  async getRequestsJson(): Promise<string | null> {
+    return SecureStore.getItemAsync(KEYS.REQUESTS);
+  },
+
+  async setRequestsJson(json: string): Promise<void> {
+    return SecureStore.setItemAsync(KEYS.REQUESTS, json);
   },
 };

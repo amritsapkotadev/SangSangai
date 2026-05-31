@@ -9,9 +9,12 @@ import {
   Modal,
   FlatList,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Heart, Search, Filter, Calendar, MapPin, Users, Star, X, ArrowRight } from 'lucide-react-native';
+import { Heart, Search, Filter, Calendar, MapPin, Users, Star, X, ArrowRight, Send, CheckCircle } from 'lucide-react-native';
+import { COLORS } from '../../src/constants/theme';
 
 // Demo trek data from local people
 const DEMO_TREKS = [
@@ -114,6 +117,12 @@ export default function BrowseScreen() {
   const [selectedTo, setSelectedTo] = useState('');
   const [likedTreks, setLikedTreks] = useState<string[]>([]);
   const [selectedTrek, setSelectedTrek] = useState(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestMessage, setRequestMessage] = useState('');
+  const [travellerCount, setTravellerCount] = useState('1');
+  const [requestSent, setRequestSent] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [requestedTreks, setRequestedTreks] = useState<string[]>([]);
 
   const toggleLike = (id: string) => {
     if (likedTreks.includes(id)) {
@@ -407,17 +416,140 @@ export default function BrowseScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity className="bg-blue-600 py-4 rounded-xl mb-6">
-                <Text className="text-white text-center font-semibold text-lg">
-                  Request Booking
-                </Text>
-              </TouchableOpacity>
+              {requestedTreks.includes(selectedTrek.id) ? (
+                <View className="bg-green-50 py-4 rounded-xl mb-6 flex-row items-center justify-center gap-2 border border-green-200">
+                  <CheckCircle size={20} color={COLORS.primary} />
+                  <Text className="text-green-700 font-semibold text-lg">Request Sent</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => setShowRequestModal(true)}
+                  className="bg-blue-600 py-4 rounded-xl mb-6"
+                  activeOpacity={0.85}
+                >
+                  <Text className="text-white text-center font-semibold text-lg">
+                    Request Booking
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </>
         )}
       </ScrollView>
     </Modal>
   );
+
+  const RequestModal = () => (
+    <Modal
+      visible={showRequestModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowRequestModal(false)}
+    >
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => !submitting && setShowRequestModal(false)} />
+        <View style={{ backgroundColor: '#ffffff', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+          <View style={{ padding: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 22, fontWeight: '700', color: '#1f2937' }}>Request to Join</Text>
+              <TouchableOpacity onPress={() => setShowRequestModal(false)}
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedTrek && (
+              <>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f9fafb', padding: 14, borderRadius: 14, marginBottom: 20 }}>
+                  <MapPin size={20} color={COLORS.primary} />
+                  <View style={{ marginLeft: 10 }}>
+                    <Text style={{ fontWeight: '600', color: '#1f2937' }}>{selectedTrek.title}</Text>
+                    <Text style={{ fontSize: 12, color: '#6b7280' }}>{selectedTrek.from} → {selectedTrek.to}</Text>
+                  </View>
+                </View>
+
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Number of Trekkers</Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {['1', '2', '3', '4', '5+'].map((num) => (
+                      <TouchableOpacity key={num} onPress={() => setTravellerCount(num)}
+                        style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
+                          backgroundColor: travellerCount === num ? COLORS.primary : '#f3f4f6' }}>
+                        <Text style={{ fontWeight: '600', color: travellerCount === num ? '#ffffff' : '#6b7280', fontSize: 13 }}>{num}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8 }}>Message to Guide</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 14, height: 100, textAlignVertical: 'top', fontSize: 15 }}
+                    placeholder="Hi! I'm interested in this trek. Let me know about availability..."
+                    multiline
+                    value={requestMessage}
+                    onChangeText={setRequestMessage}
+                  />
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity onPress={() => setShowRequestModal(false)}
+                    style={{ flex: 1, paddingVertical: 14, borderRadius: 14, borderWidth: 1, borderColor: '#e5e7eb', alignItems: 'center' }}>
+                    <Text style={{ color: '#6b7280', fontWeight: '600' }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleSendRequest}
+                    disabled={submitting}
+                    style={{ flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: COLORS.primary, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+                    {submitting ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
+                    ) : (
+                      <>
+                        <Send size={18} color="#ffffff" />
+                        <Text style={{ color: '#ffffff', fontWeight: '600' }}>Send Request</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const RequestSuccessModal = () => (
+    <Modal visible={!!requestSent} animationType="fade" transparent={true} onRequestClose={() => setRequestSent(null)}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+        <View style={{ backgroundColor: '#ffffff', borderRadius: 24, padding: 32, alignItems: 'center', width: '100%' }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#ecfdf5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <CheckCircle size={40} color={COLORS.primary} />
+          </View>
+          <Text style={{ fontSize: 22, fontWeight: '700', color: '#1f2937', marginBottom: 8, textAlign: 'center' }}>Request Sent!</Text>
+          <Text style={{ fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 22, marginBottom: 24 }}>
+            Your request has been sent to the guide. They'll review and approve it soon. You'll be notified when they respond.
+          </Text>
+          <TouchableOpacity onPress={() => { setRequestSent(null); setShowRequestModal(false); }}
+            style={{ backgroundColor: COLORS.primary, paddingVertical: 14, borderRadius: 14, width: '100%', alignItems: 'center' }}>
+            <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 16 }}>Got it!</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const handleSendRequest = async () => {
+    if (!requestMessage.trim()) {
+      Alert.alert('Message Required', 'Please write a brief message to the guide.');
+      return;
+    }
+    setSubmitting(true);
+    // Simulate API call
+    await new Promise((r) => setTimeout(r, 1200));
+    if (selectedTrek) setRequestedTreks((prev) => [...prev, selectedTrek.id]);
+    setRequestSent(selectedTrek?.id || '');
+    setSubmitting(false);
+  };
 
   const filteredTreks = filterTreks();
   const activeFilterCount = [selectedDifficulty, selectedFrom, selectedTo].filter(f => f && f !== '').length;
@@ -514,6 +646,8 @@ export default function BrowseScreen() {
       {/* Modals */}
       <FilterModal />
       <TrekDetailModal />
+      <RequestModal />
+      <RequestSuccessModal />
     </SafeAreaView>
   );
 }

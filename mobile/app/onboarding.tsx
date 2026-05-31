@@ -1,5 +1,4 @@
-// app/onboarding.tsx
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,32 +7,39 @@ import {
   TouchableOpacity,
   Dimensions,
   Animated,
+  StatusBar,
 } from 'react-native';
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { StatusBar } from 'expo-status-bar';
+import { storage } from '../src/lib/storage';
+import { COLORS } from '../src/constants/theme';
 
 const { width, height } = Dimensions.get('window');
-const PRIMARY_GREEN = '#059669';
 
-const onboardingData = [
+const SLIDES = [
   {
     id: '1',
-    icon: 'pine-tree', // Same as splash for consistency
-    title: 'Find Your Tribe',
-    description: 'Connect with fellow trekkers who share your pace, experience level, and destination.',
+    icon: 'map-plus',
+    title: 'Post Your Trek',
+    description: 'Local guides share their treks — routes, dates, and group size. Anyone can add a trek they know.',
+    gradient: ['#059669', '#047857'],
   },
   {
     id: '2',
-    icon: 'shield-check-outline',
-    title: 'Safe & Secure',
-    description: 'Real-time location sharing, emergency SOS, and verified trekking guides for peace of mind.',
+    icon: 'handshake',
+    title: 'Connect & Approve',
+    description: 'Interested trekkers send a request. You review their profile and approve the ones you trust.',
+    gradient: ['#059669', '#065f46'],
   },
   {
     id: '3',
-    icon: 'map-marker-radius-outline',
-    title: 'Live Tracking',
-    description: 'Share your journey with loved ones and never lose your way on the trail.',
+    icon: 'pine-tree',
+    title: 'Trek Together',
+    description: 'Once approved, both sides see each other\'s details. Meet up, hit the trail, and earn SangPoints.',
+    gradient: ['#047857', '#064e3b'],
   },
 ];
 
@@ -43,22 +49,28 @@ export default function OnboardingScreen() {
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
 
-  const handleNext = () => {
-    if (currentIndex < onboardingData.length - 1) {
+  const handleNext = useCallback(() => {
+    if (currentIndex < SLIDES.length - 1) {
       flatListRef.current?.scrollToIndex({
         index: currentIndex + 1,
         animated: true,
       });
     } else {
-      router.replace('/(tabs)/dashboard');
+      handleGetStarted();
     }
-  };
+  }, [currentIndex]);
 
-  const handleSkip = () => {
-    router.replace('/(tabs)/dashboard');
-  };
+  const handleGetStarted = useCallback(async () => {
+    await storage.setOnboardingSeen(true);
+    router.replace('/login');
+  }, [router]);
 
-  const renderItem = ({ item, index }: { item: typeof onboardingData[0]; index: number }) => {
+  const handleSkip = useCallback(async () => {
+    await storage.setOnboardingSeen(true);
+    router.replace('/login');
+  }, [router]);
+
+  const renderItem = ({ item, index }: { item: typeof SLIDES[0]; index: number }) => {
     const inputRange = [
       (index - 1) * width,
       index * width,
@@ -67,27 +79,38 @@ export default function OnboardingScreen() {
 
     const scale = scrollX.interpolate({
       inputRange,
-      outputRange: [0.8, 1, 0.8],
+      outputRange: [0.85, 1, 0.85],
+      extrapolate: 'clamp',
+    });
+
+    const iconRotate = scrollX.interpolate({
+      inputRange,
+      outputRange: ['-15deg', '0deg', '15deg'],
       extrapolate: 'clamp',
     });
 
     const opacity = scrollX.interpolate({
       inputRange,
-      outputRange: [0, 1, 0],
+      outputRange: [0.3, 1, 0.3],
       extrapolate: 'clamp',
     });
 
     return (
       <View style={styles.slide}>
-        <Animated.View style={[styles.imageContainer, { transform: [{ scale }], opacity }]}>
-          <View style={styles.iconBackground}>
-            <MaterialCommunityIcons name={item.icon as any} size={100} color="#fff" />
-          </View>
+        <Animated.View style={[styles.iconWrap, { transform: [{ scale }, { rotate: iconRotate }], opacity }]}>
+          <LinearGradient
+            colors={item.gradient as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.iconBg}
+          >
+            <MaterialCommunityIcons name={item.icon as any} size={80} color="#ffffff" />
+          </LinearGradient>
         </Animated.View>
 
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.description}>{item.description}</Text>
+        <View style={styles.slideTextWrap}>
+          <Text style={styles.slideTitle}>{item.title}</Text>
+          <Text style={styles.slideDesc}>{item.description}</Text>
         </View>
       </View>
     );
@@ -95,67 +118,71 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" />
-      
-      {/* Skip Button */}
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+        <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} activeOpacity={0.7}>
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
+        <View style={styles.headerCounter}>
+          <Text style={styles.counterText}>{currentIndex + 1} / {SLIDES.length}</Text>
+        </View>
       </View>
 
-      <FlatList
+      <AnimatedFlatList
         ref={flatListRef}
-        data={onboardingData}
-        renderItem={renderItem}
+        data={SLIDES}
+        renderItem={renderItem as any}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
+          { useNativeDriver: true }
         )}
-        scrollEventThrottle={32}
+        scrollEventThrottle={16}
         onMomentumScrollEnd={(e) => {
           const index = Math.round(e.nativeEvent.contentOffset.x / width);
           setCurrentIndex(index);
         }}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: any) => item.id}
       />
 
       <View style={styles.footer}>
-        {/* Pagination Dots */}
         <View style={styles.paginator}>
-          {onboardingData.map((_, i) => {
+          {SLIDES.map((_, i) => {
             const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
             const dotWidth = scrollX.interpolate({
               inputRange,
-              outputRange: [10, 30, 10],
+              outputRange: [8, 28, 8],
               extrapolate: 'clamp',
             });
-            const opacity = scrollX.interpolate({
+            const dotOpacity = scrollX.interpolate({
               inputRange,
-              outputRange: [0.3, 1, 0.3],
+              outputRange: [0.25, 1, 0.25],
               extrapolate: 'clamp',
             });
             return (
               <Animated.View
                 key={i}
-                style={[styles.dot, { width: dotWidth, opacity }]}
+                style={[styles.dot, { width: dotWidth, opacity: dotOpacity, backgroundColor: COLORS.primary }]}
               />
             );
           })}
         </View>
 
-        {/* Action Button */}
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={handleNext}
-        >
-          <Text style={styles.nextButtonText}>
-            {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Continue'}
-          </Text>
-          <MaterialCommunityIcons name="arrow-right" size={24} color="#fff" />
+        <TouchableOpacity onPress={handleNext} activeOpacity={0.85} style={styles.nextBtn}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.nextBtnGradient}
+          >
+            <Text style={styles.nextBtnText}>
+              {currentIndex === SLIDES.length - 1 ? 'Get Started' : 'Continue'}
+            </Text>
+            <MaterialCommunityIcons name="arrow-right" size={22} color="#ffffff" />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
@@ -165,23 +192,37 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 60,
-    paddingHorizontal: 30,
-    alignItems: 'flex-end',
+    paddingHorizontal: 24,
+    paddingBottom: 8,
   },
-  skipButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-    backgroundColor: '#f8f9fa',
+  skipBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    backgroundColor: COLORS.gray[100],
   },
   skipText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6c757d',
+    color: COLORS.gray[500],
+  },
+  headerCounter: {
+    backgroundColor: COLORS.primaryBg,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+  },
+  counterText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   slide: {
     width,
@@ -189,75 +230,72 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 40,
   },
-  imageContainer: {
-    flex: 0.45,
-    justifyContent: 'center',
+  iconWrap: {
+    marginBottom: 48,
   },
-  iconBackground: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: PRIMARY_GREEN,
+  iconBg: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: PRIMARY_GREEN,
-    shadowOffset: { width: 0, height: 10 },
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowRadius: 24,
+    elevation: 10,
   },
-  textContainer: {
-    flex: 0.35,
+  slideTextWrap: {
     alignItems: 'center',
-    paddingTop: 40,
+    paddingHorizontal: 8,
   },
-  title: {
-    fontSize: 32,
+  slideTitle: {
+    fontSize: 30,
     fontWeight: '800',
-    color: '#111827',
+    color: COLORS.black,
     textAlign: 'center',
     marginBottom: 16,
     letterSpacing: -0.5,
   },
-  description: {
-    fontSize: 17,
-    color: '#6B7280',
+  slideDesc: {
+    fontSize: 16,
+    color: COLORS.gray[500],
     textAlign: 'center',
     lineHeight: 26,
-    paddingHorizontal: 10,
+    maxWidth: 320,
   },
   footer: {
-    paddingBottom: 60,
-    paddingHorizontal: 30,
+    paddingBottom: 50,
+    paddingHorizontal: 24,
   },
   paginator: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   dot: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: PRIMARY_GREEN,
-    marginHorizontal: 6,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
   },
-  nextButton: {
-    backgroundColor: PRIMARY_GREEN,
-    height: 64,
-    borderRadius: 20,
+  nextBtn: {
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  nextBtnGradient: {
+    borderRadius: 18,
+    paddingVertical: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    shadowColor: PRIMARY_GREEN,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 5,
+    gap: 10,
   },
-  nextButtonText: {
-    color: '#fff',
-    fontSize: 18,
+  nextBtnText: {
+    color: '#ffffff',
+    fontSize: 17,
     fontWeight: '700',
   },
 });

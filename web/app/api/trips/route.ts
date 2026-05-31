@@ -39,6 +39,9 @@ export async function POST(request: NextRequest) {
         status: "OPEN",
       },
       include: {
+        guide: {
+          select: { id: true, name: true, avatarUrl: true, nationality: true },
+        },
         route: {
           include: { waypoints: { orderBy: { order: "asc" } } },
         },

@@ -16,9 +16,10 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/stores/authStore';
+import { COLORS } from '../src/constants/theme';
 
-const GREEN = '#059669';
-const GREEN_LIGHT = '#34d399';
+const GREEN = COLORS.primary;
+const GREEN_LIGHT = COLORS.primaryLight;
 
 type Role = 'NEPALI' | 'FOREIGN';
 
